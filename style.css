@@ -393,6 +393,11 @@ h1 {
     max-width: 400px;
 }
 
+.grid-2x2 {
+    grid-template-columns: repeat(2, 100px);
+    grid-template-rows: repeat(2, 100px);
+}
+
 .grid-3x3 {
     grid-template-columns: repeat(3, 80px);
     grid-template-rows: repeat(3, 80px);
@@ -919,6 +924,11 @@ h1 {
     
     .game-grid {
         max-width: 300px;
+    }
+    
+    .grid-2x2 {
+        grid-template-columns: repeat(2, 90px);
+        grid-template-rows: repeat(2, 90px);
     }
     
     .grid-3x3 {

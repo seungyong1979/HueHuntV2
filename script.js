@@ -858,7 +858,20 @@ class ColorGame {
     }
     
     generateLevel() {
-        const gridSize = Math.min(3 + Math.floor(this.level / 3), 6);
+        // 더 쉬운 그리드 크기 시작
+        let gridSize;
+        if (this.level <= 2) {
+            gridSize = 2; // 레벨 1-2: 2x2 (4개 타일)
+        } else if (this.level <= 5) {
+            gridSize = 3; // 레벨 3-5: 3x3 (9개 타일)
+        } else if (this.level <= 10) {
+            gridSize = 4; // 레벨 6-10: 4x4 (16개 타일)
+        } else if (this.level <= 15) {
+            gridSize = 5; // 레벨 11-15: 5x5 (25개 타일)
+        } else {
+            gridSize = 6; // 레벨 16+: 6x6 (36개 타일)
+        }
+        
         const totalTiles = gridSize * gridSize;
         
         this.gameGrid.innerHTML = '';
@@ -900,29 +913,43 @@ class ColorGame {
         
         let [, hue, saturation, lightness] = hslMatch.map(Number);
         
-        // 더 쉬운 시작을 위한 난이도 조정
-        let difficulty;
-        if (level <= 3) {
-            difficulty = 30 - (level * 5); // 레벨 1-3: 25, 20, 15
-        } else if (level <= 10) {
-            difficulty = 20 - ((level - 3) * 2); // 레벨 4-10: 18, 16, 14, 12, 10, 8, 6
+        // 아주 쉬운 시작을 위한 난이도 조정 (색상 차이 20+에서 시작)
+        let colorDifference;
+        if (level === 1) {
+            colorDifference = 40; // 레벨 1: 매우 쉬움
+        } else if (level === 2) {
+            colorDifference = 35; // 레벨 2: 쉬움
+        } else if (level === 3) {
+            colorDifference = 30; // 레벨 3: 보통-쉬움
+        } else if (level <= 5) {
+            colorDifference = 25; // 레벨 4-5: 보통
+        } else if (level <= 8) {
+            colorDifference = 20; // 레벨 6-8: 보통-어려움
+        } else if (level <= 12) {
+            colorDifference = 15 - (level - 8); // 레벨 9-12: 15, 14, 13, 12
+        } else if (level <= 20) {
+            colorDifference = Math.max(8, 12 - (level - 12)); // 레벨 13-20: 점진적 감소
         } else {
-            difficulty = Math.max(3, 8 - (level - 10)); // 레벨 11+: 점점 더 어려워짐
+            colorDifference = Math.max(5, 8 - Math.floor((level - 20) / 3)); // 레벨 21+: 매우 어려움
         }
         
-        const changeAmount = Math.floor(Math.random() * difficulty) + 3;
+        // 랜덤한 변화량 (최소값 보장)
+        const minChange = Math.floor(colorDifference * 0.7);
+        const maxChange = colorDifference;
+        const changeAmount = minChange + Math.floor(Math.random() * (maxChange - minChange + 1));
         
-        const changeType = Math.floor(Math.random() * 3);
-        switch (changeType) {
-            case 0:
-                hue = (hue + changeAmount) % 360;
-                break;
-            case 1:
-                saturation = Math.max(10, Math.min(90, saturation + (Math.random() > 0.5 ? changeAmount : -changeAmount)));
-                break;
-            case 2:
-                lightness = Math.max(20, Math.min(80, lightness + (Math.random() > 0.5 ? changeAmount : -changeAmount)));
-                break;
+        // 색상 변경 타입 결정 (hue 변경을 우선적으로)
+        const changeType = Math.random();
+        
+        if (changeType < 0.6) {
+            // 60% 확률로 색조(Hue) 변경 - 가장 눈에 띄는 변화
+            hue = (hue + changeAmount) % 360;
+        } else if (changeType < 0.8) {
+            // 20% 확률로 채도(Saturation) 변경
+            saturation = Math.max(30, Math.min(90, saturation + (Math.random() > 0.5 ? changeAmount : -changeAmount)));
+        } else {
+            // 20% 확률로 명도(Lightness) 변경
+            lightness = Math.max(25, Math.min(75, lightness + (Math.random() > 0.5 ? changeAmount : -changeAmount)));
         }
         
         return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
@@ -1091,7 +1118,19 @@ class ColorGame {
             this.timerElement.style.color = '#495057';
         }
         
-        const gridSize = Math.min(3 + Math.floor(this.level / 3), 6);
+        // updateDisplay에서 사용할 그리드 크기 계산
+        let gridSize;
+        if (this.level <= 2) {
+            gridSize = 2;
+        } else if (this.level <= 5) {
+            gridSize = 3;
+        } else if (this.level <= 10) {
+            gridSize = 4;
+        } else if (this.level <= 15) {
+            gridSize = 5;
+        } else {
+            gridSize = 6;
+        }
         this.instructionElement.textContent = this.languageManager.getText('level-instruction', this.level, gridSize);
     }
     
