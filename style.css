@@ -76,6 +76,77 @@ body.intro-active {
     font-size: 1.5rem;
 }
 
+.intro-ranking {
+    width: 100%;
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 20px;
+    border: 2px solid #e9ecef;
+}
+
+.intro-ranking h3 {
+    color: #333;
+    margin: 0 0 15px 0;
+    font-size: 1.2em;
+    text-align: center;
+}
+
+.intro-ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.intro-ranking-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+    font-size: 0.9em;
+}
+
+.intro-ranking-item.top-1 {
+    border-left-color: #ffd700;
+    background: linear-gradient(45deg, #fff9c4, #fff);
+}
+
+.intro-ranking-item.top-2 {
+    border-left-color: #c0c0c0;
+    background: linear-gradient(45deg, #f5f5f5, #fff);
+}
+
+.intro-ranking-item.top-3 {
+    border-left-color: #cd7f32;
+    background: linear-gradient(45deg, #ffeaa7, #fff);
+}
+
+.intro-ranking-rank {
+    font-weight: bold;
+    min-width: 25px;
+    text-align: center;
+}
+
+.intro-ranking-name {
+    flex: 1;
+    margin: 0 10px;
+    font-weight: 500;
+}
+
+.intro-ranking-score {
+    font-weight: bold;
+    color: #667eea;
+}
+
+.loading-text {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 20px;
+}
+
 .game-subtitle {
     font-size: 1.3em;
     color: #666;
@@ -145,15 +216,38 @@ header {
     margin-bottom: 30px;
 }
 
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.home-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.home-btn:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    transform: scale(1.1);
+}
+
 h1 {
     color: #333;
     font-size: 2.5em;
-    margin-bottom: 20px;
+    margin: 0;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 15px;
+    flex: 1;
 }
 
 .version-badge {
@@ -325,6 +419,37 @@ h1 {
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+.color-tile::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    background: 
+        radial-gradient(circle at 25% 25%, rgba(255,255,255,0.8) 1px, transparent 1px),
+        radial-gradient(circle at 75% 25%, rgba(255,255,255,0.6) 1px, transparent 1px),
+        radial-gradient(circle at 25% 75%, rgba(255,255,255,0.4) 1px, transparent 1px),
+        radial-gradient(circle at 75% 75%, rgba(255,255,255,0.3) 1px, transparent 1px);
+    background-size: 8px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+}
+
+.color-tile::after {
+    content: '';
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid rgba(0,0,0,0.2);
+    border-top: 6px solid transparent;
 }
 
 .color-tile:hover {

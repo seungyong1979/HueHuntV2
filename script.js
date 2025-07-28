@@ -297,7 +297,10 @@ const translations = {
         "example": "예시",
         "demo-instruction": "위 예시에서 오른쪽 위의 다른 색상을 클릭하세요!",
         "start-playing": "게임 시작하기",
-        "level-instruction": (level, gridSize) => `레벨 ${level}: ${gridSize}x${gridSize} 그리드에서 다른 색상을 찾으세요!`
+        "level-instruction": (level, gridSize) => `레벨 ${level}: ${gridSize}x${gridSize} 그리드에서 다른 색상을 찾으세요!`,
+        "top-players": "🏆 오늘의 상위 플레이어",
+        "loading-rankings": "순위 로딩 중...",
+        "no-top-players": "아직 상위 플레이어가 없습니다"
     },
     en: {
         subtitle: "Color Discrimination Mastering Game",
@@ -361,7 +364,10 @@ const translations = {
         "example": "Example",
         "demo-instruction": "Click the different colored square in the top right!",
         "start-playing": "Start Playing",
-        "level-instruction": (level, gridSize) => `Level ${level}: Find the different color in ${gridSize}x${gridSize} grid!`
+        "level-instruction": (level, gridSize) => `Level ${level}: Find the different color in ${gridSize}x${gridSize} grid!`,
+        "top-players": "🏆 Top Players Today",
+        "loading-rankings": "Loading rankings...",
+        "no-top-players": "No top players yet"
     }
 };
 
@@ -638,6 +644,8 @@ class ColorGame {
         
         this.soundToggleBtn = document.getElementById('soundToggleBtn');
         this.introSoundToggleBtn = document.getElementById('introSoundToggleBtn');
+        this.homeBtn = document.getElementById('homeBtn');
+        this.introRankingList = document.getElementById('introRankingList');
     }
     
     setupEventListeners() {
@@ -706,6 +714,11 @@ class ColorGame {
             this.toggleSound();
         });
         
+        this.homeBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.goToIntro();
+        });
+        
         document.querySelectorAll('.lang-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 this.soundManager.playButtonClickSound();
@@ -726,6 +739,56 @@ class ColorGame {
         this.introScreen.style.display = 'block';
         this.gameContainer.style.display = 'none';
         document.body.classList.add('intro-active');
+        this.loadIntroRankings();
+    }
+    
+    goToIntro() {
+        // 게임 상태 초기화
+        this.endGame();
+        this.gameOverModal.style.display = 'none';
+        this.rankingModal.style.display = 'none';
+        this.tutorialModal.style.display = 'none';
+        this.limitReachedModal.style.display = 'none';
+        this.nameInputModal.style.display = 'none';
+        
+        this.showIntroScreen();
+    }
+    
+    async loadIntroRankings() {
+        try {
+            const rankings = await this.rankingManager.getRankings();
+            this.displayIntroRankings(rankings.slice(0, 5)); // 상위 5명만
+        } catch (error) {
+            console.log('Failed to load intro rankings:', error);
+            this.introRankingList.innerHTML = `<div class="loading-text">${this.languageManager.getText('no-top-players')}</div>`;
+        }
+    }
+    
+    displayIntroRankings(rankings) {
+        if (!rankings || rankings.length === 0) {
+            this.introRankingList.innerHTML = `<div class="loading-text">${this.languageManager.getText('no-top-players')}</div>`;
+            return;
+        }
+        
+        this.introRankingList.innerHTML = '';
+        rankings.forEach((ranking, index) => {
+            const rankItem = document.createElement('div');
+            rankItem.className = 'intro-ranking-item';
+            
+            if (index === 0) rankItem.classList.add('top-1');
+            else if (index === 1) rankItem.classList.add('top-2');
+            else if (index === 2) rankItem.classList.add('top-3');
+            
+            const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+            
+            rankItem.innerHTML = `
+                <span class="intro-ranking-rank">${medals[index]}</span>
+                <span class="intro-ranking-name">${ranking.name}</span>
+                <span class="intro-ranking-score">${ranking.score}${this.languageManager.currentLanguage === 'ko' ? '점' : ' pts'}</span>
+            `;
+            
+            this.introRankingList.appendChild(rankItem);
+        });
     }
     
     showNameInput() {

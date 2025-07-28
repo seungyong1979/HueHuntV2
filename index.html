@@ -24,19 +24,29 @@
                 </div>
             </div>
             
+            <div class="intro-ranking">
+                <h3 data-text="top-players">🏆 오늘의 상위 플레이어</h3>
+                <div id="introRankingList" class="intro-ranking-list">
+                    <div class="loading-text" data-text="loading-rankings">순위 로딩 중...</div>
+                </div>
+            </div>
+            
             <button id="introStartBtn" class="btn intro-start-btn" data-text="start-game">게임 시작</button>
         </div>
     </div>
     
     <div class="container" style="display: none;" id="gameContainer">
         <header>
-            <h1>Hue Hunt v2 <span class="version-badge">Global Rankings</span></h1>
+            <div class="header-top">
+                <button id="homeBtn" class="home-btn" title="홈으로 가기">🏠</button>
+                <h1>Hue Hunt v2 <span class="version-badge">Global Rankings</span></h1>
+                <button id="soundToggleBtn" class="sound-toggle-btn" title="사운드 켜기/끄기">🔊</button>
+            </div>
             <div class="score-board">
                 <span data-text="score">점수: <span id="score">0</span></span>
                 <span data-text="level">레벨: <span id="level">1</span></span>
                 <span data-text="time">시간: <span id="timer">30</span><span data-text="seconds">초</span></span>
                 <span class="games-left" data-text="games-left">남은 게임: <span id="gamesLeft">10</span></span>
-                <button id="soundToggleBtn" class="sound-toggle-btn" title="사운드 켜기/끄기">🔊</button>
             </div>
         </header>
         
