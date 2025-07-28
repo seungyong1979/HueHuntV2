@@ -419,37 +419,6 @@ h1 {
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
-}
-
-.color-tile::before {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    right: 2px;
-    bottom: 2px;
-    background: 
-        radial-gradient(circle at 25% 25%, rgba(255,255,255,0.8) 1px, transparent 1px),
-        radial-gradient(circle at 75% 25%, rgba(255,255,255,0.6) 1px, transparent 1px),
-        radial-gradient(circle at 25% 75%, rgba(255,255,255,0.4) 1px, transparent 1px),
-        radial-gradient(circle at 75% 75%, rgba(255,255,255,0.3) 1px, transparent 1px);
-    background-size: 8px 8px;
-    border-radius: 4px;
-    pointer-events: none;
-}
-
-.color-tile::after {
-    content: '';
-    position: absolute;
-    bottom: 1px;
-    right: 1px;
-    width: 0;
-    height: 0;
-    border-left: 6px solid rgba(0,0,0,0.2);
-    border-top: 6px solid transparent;
 }
 
 .color-tile:hover {
