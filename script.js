@@ -2,6 +2,112 @@
 const API_BASE_URL = window.location.origin;
 let isServerAvailable = false;
 
+// Sound Manager Class
+class SoundManager {
+    constructor() {
+        this.audioContext = null;
+        this.isEnabled = true;
+        this.initAudioContext();
+    }
+    
+    initAudioContext() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (error) {
+            console.log('Web Audio API not supported');
+            this.isEnabled = false;
+        }
+    }
+    
+    async resumeAudioContext() {
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            await this.audioContext.resume();
+        }
+    }
+    
+    createOscillator(frequency, type = 'sine', duration = 0.2) {
+        if (!this.audioContext || !this.isEnabled) return;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+        oscillator.type = type;
+        
+        gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+        
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + duration);
+    }
+    
+    playCorrectSound() {
+        this.resumeAudioContext();
+        // 상승하는 톤의 기분 좋은 소리
+        this.createOscillator(523.25, 'sine', 0.15); // C5
+        setTimeout(() => this.createOscillator(659.25, 'sine', 0.15), 50); // E5
+        setTimeout(() => this.createOscillator(783.99, 'sine', 0.2), 100); // G5
+    }
+    
+    playWrongSound() {
+        this.resumeAudioContext();
+        // 하강하는 톤의 실망스러운 소리
+        this.createOscillator(440, 'sawtooth', 0.3); // A4
+        setTimeout(() => this.createOscillator(349.23, 'sawtooth', 0.3), 100); // F4
+        setTimeout(() => this.createOscillator(293.66, 'sawtooth', 0.4), 200); // D4
+    }
+    
+    playComboSound(comboCount) {
+        this.resumeAudioContext();
+        // 콤보 수에 따라 높아지는 톤
+        const baseFreq = 523.25; // C5
+        const frequency = baseFreq * Math.pow(1.2, Math.min(comboCount - 2, 5));
+        this.createOscillator(frequency, 'triangle', 0.25);
+        setTimeout(() => this.createOscillator(frequency * 1.5, 'triangle', 0.2), 80);
+    }
+    
+    playGameOverSound() {
+        this.resumeAudioContext();
+        // 게임 오버 멜로디
+        const notes = [440, 415.3, 392, 369.99, 349.23]; // A4 to F4
+        notes.forEach((freq, index) => {
+            setTimeout(() => this.createOscillator(freq, 'sine', 0.4), index * 150);
+        });
+    }
+    
+    playLevelUpSound() {
+        this.resumeAudioContext();
+        // 레벨업 효과음
+        this.createOscillator(523.25, 'triangle', 0.1); // C5
+        setTimeout(() => this.createOscillator(659.25, 'triangle', 0.1), 50); // E5
+        setTimeout(() => this.createOscillator(783.99, 'triangle', 0.1), 100); // G5
+        setTimeout(() => this.createOscillator(1046.5, 'triangle', 0.2), 150); // C6
+    }
+    
+    playButtonClickSound() {
+        this.resumeAudioContext();
+        // 버튼 클릭 소리
+        this.createOscillator(800, 'square', 0.1);
+    }
+    
+    playStartGameSound() {
+        this.resumeAudioContext();
+        // 게임 시작 소리
+        this.createOscillator(523.25, 'sine', 0.15); // C5
+        setTimeout(() => this.createOscillator(659.25, 'sine', 0.15), 100); // E5
+        setTimeout(() => this.createOscillator(783.99, 'sine', 0.15), 200); // G5
+        setTimeout(() => this.createOscillator(1046.5, 'sine', 0.3), 300); // C6
+    }
+    
+    toggle() {
+        this.isEnabled = !this.isEnabled;
+        return this.isEnabled;
+    }
+}
+
 // Check server availability
 async function checkServerConnection() {
     try {
@@ -358,6 +464,7 @@ class ColorGame {
         this.rankingManager = new GlobalRankingManager();
         this.languageManager = new LanguageManager();
         this.gameLimitManager = new GameLimitManager();
+        this.soundManager = new SoundManager();
         this.adTimer = null;
         this.adTimeLeft = 30;
         this.combo = 0;
@@ -368,6 +475,7 @@ class ColorGame {
         
         this.initializeElements();
         this.setupEventListeners();
+        this.loadSoundSettings();
         this.updateConnectionStatus();
         this.showIntroScreen();
     }
@@ -419,25 +527,71 @@ class ColorGame {
         this.connectionStatus = document.getElementById('connectionStatus');
         this.statusIndicator = document.getElementById('statusIndicator');
         this.statusText = document.getElementById('statusText');
+        
+        this.soundToggleBtn = document.getElementById('soundToggleBtn');
     }
     
     setupEventListeners() {
-        this.introStartBtn.addEventListener('click', () => this.showNameInput());
-        this.startBtn.addEventListener('click', () => this.startGame());
-        this.restartBtn.addEventListener('click', () => this.restartGame());
-        this.playAgainBtn.addEventListener('click', () => this.playAgain());
-        this.nameSubmitBtn.addEventListener('click', () => this.submitName());
-        this.viewRankingBtn.addEventListener('click', () => this.showRanking());
-        this.closeRankingBtn.addEventListener('click', () => this.hideRanking());
-        this.watchAdBtn.addEventListener('click', () => this.startAdVideo());
-        this.closeAdBtn.addEventListener('click', () => this.closeAdVideo());
-        this.closeLimitModalBtn.addEventListener('click', () => this.closeLimitModal());
-        this.howToPlayBtn.addEventListener('click', () => this.showTutorial());
-        this.startGameFromTutorial.addEventListener('click', () => this.startGameFromTutorialModal());
-        this.closeTutorialBtn.addEventListener('click', () => this.hideTutorial());
+        this.introStartBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.showNameInput();
+        });
+        this.startBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.startGame();
+        });
+        this.restartBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.restartGame();
+        });
+        this.playAgainBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.playAgain();
+        });
+        this.nameSubmitBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.submitName();
+        });
+        this.viewRankingBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.showRanking();
+        });
+        this.closeRankingBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.hideRanking();
+        });
+        this.watchAdBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.startAdVideo();
+        });
+        this.closeAdBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.closeAdVideo();
+        });
+        this.closeLimitModalBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.closeLimitModal();
+        });
+        this.howToPlayBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.showTutorial();
+        });
+        this.startGameFromTutorial.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.startGameFromTutorialModal();
+        });
+        this.closeTutorialBtn.addEventListener('click', () => {
+            this.soundManager.playButtonClickSound();
+            this.hideTutorial();
+        });
+        
+        this.soundToggleBtn.addEventListener('click', () => {
+            this.toggleSound();
+        });
         
         document.querySelectorAll('.lang-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
+                this.soundManager.playButtonClickSound();
                 document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
                 this.languageManager.setLanguage(e.target.getAttribute('data-lang'));
@@ -499,6 +653,9 @@ class ColorGame {
         this.timeLeft = 30;
         this.combo = 0;
         this.hideComboIndicator();
+        
+        // 게임 시작 효과음
+        this.soundManager.playStartGameSound();
         
         this.updateDisplay();
         this.generateLevel();
@@ -601,12 +758,23 @@ class ColorGame {
         let baseScore = this.level * 10;
         let comboBonus = 0;
         
+        // 정답 효과음
+        this.soundManager.playCorrectSound();
+        
         if (this.combo >= 2) {
             comboBonus = Math.floor(baseScore * (this.combo - 1) * 0.5);
             this.showComboIndicator();
+            // 콤보 효과음
+            this.soundManager.playComboSound(this.combo);
         }
         
         this.score += baseScore + comboBonus;
+        
+        // 레벨업 시 특별 효과음 (매 5레벨마다)
+        if (this.level % 5 === 0) {
+            setTimeout(() => this.soundManager.playLevelUpSound(), 200);
+        }
+        
         this.level++;
         
         // 콤보 타이머 리셋
@@ -628,6 +796,9 @@ class ColorGame {
         if (!this.gameActive) return;
         
         tile.classList.add('wrong');
+        
+        // 오답 효과음
+        this.soundManager.playWrongSound();
         
         // 시작 시간을 조정해서 3초 감소 효과
         this.startTime -= 3000;
@@ -671,6 +842,9 @@ class ColorGame {
             clearInterval(this.timer);
             this.timer = null;
         }
+        
+        // 게임 오버 효과음
+        this.soundManager.playGameOverSound();
         
         const playerRank = await this.rankingManager.saveScore(this.playerName, this.score, this.level);
         this.currentGameId = this.rankingManager.generateUniqueId();
@@ -841,6 +1015,39 @@ class ColorGame {
     startGameFromTutorialModal() {
         this.hideTutorial();
         this.startGame();
+    }
+    
+    toggleSound() {
+        const isEnabled = this.soundManager.toggle();
+        if (isEnabled) {
+            this.soundToggleBtn.textContent = '🔊';
+            this.soundToggleBtn.classList.remove('muted');
+            this.soundToggleBtn.title = '사운드 끄기';
+            // 사운드 활성화 시 확인음
+            this.soundManager.playButtonClickSound();
+        } else {
+            this.soundToggleBtn.textContent = '🔇';
+            this.soundToggleBtn.classList.add('muted');
+            this.soundToggleBtn.title = '사운드 켜기';
+        }
+        
+        // 로컬 스토리지에 설정 저장
+        localStorage.setItem('hueHuntSoundEnabled', isEnabled.toString());
+    }
+    
+    loadSoundSettings() {
+        const soundEnabled = localStorage.getItem('hueHuntSoundEnabled');
+        if (soundEnabled === 'false') {
+            this.soundManager.isEnabled = false;
+            this.soundToggleBtn.textContent = '🔇';
+            this.soundToggleBtn.classList.add('muted');
+            this.soundToggleBtn.title = '사운드 켜기';
+        } else {
+            this.soundManager.isEnabled = true;
+            this.soundToggleBtn.textContent = '🔊';
+            this.soundToggleBtn.classList.remove('muted');
+            this.soundToggleBtn.title = '사운드 끄기';
+        }
     }
     
     async updateConnectionStatus() {
