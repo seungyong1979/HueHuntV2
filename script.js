@@ -7,6 +7,10 @@ class SoundManager {
     constructor() {
         this.audioContext = null;
         this.isEnabled = true;
+        this.bgMusicEnabled = true;
+        this.bgMusicPlaying = false;
+        this.bgMusicGainNode = null;
+        this.bgMusicInterval = null;
         this.initAudioContext();
     }
     
@@ -104,7 +108,111 @@ class SoundManager {
     
     toggle() {
         this.isEnabled = !this.isEnabled;
+        if (!this.isEnabled) {
+            this.stopBackgroundMusic();
+        }
         return this.isEnabled;
+    }
+    
+    // 귀여운 미디 스타일 배경음악
+    createBackgroundMusic() {
+        if (!this.audioContext || !this.isEnabled || !this.bgMusicEnabled) return;
+        
+        // 귀여운 멜로디 시퀀스 (도레미파솔라시도 기반)
+        const melody = [
+            { note: 523.25, duration: 0.3 }, // C5
+            { note: 587.33, duration: 0.3 }, // D5
+            { note: 659.25, duration: 0.3 }, // E5
+            { note: 523.25, duration: 0.3 }, // C5
+            { note: 659.25, duration: 0.3 }, // E5
+            { note: 523.25, duration: 0.3 }, // C5
+            { note: 698.46, duration: 0.6 }, // F5
+            { note: 659.25, duration: 0.6 }, // E5
+            
+            { note: 587.33, duration: 0.3 }, // D5
+            { note: 659.25, duration: 0.3 }, // E5
+            { note: 698.46, duration: 0.3 }, // F5
+            { note: 587.33, duration: 0.3 }, // D5
+            { note: 698.46, duration: 0.3 }, // F5
+            { note: 587.33, duration: 0.3 }, // D5
+            { note: 783.99, duration: 0.6 }, // G5
+            { note: 698.46, duration: 0.6 }, // F5
+            
+            { note: 659.25, duration: 0.3 }, // E5
+            { note: 698.46, duration: 0.3 }, // F5
+            { note: 783.99, duration: 0.3 }, // G5
+            { note: 880.00, duration: 0.3 }, // A5
+            { note: 783.99, duration: 0.3 }, // G5
+            { note: 698.46, duration: 0.3 }, // F5
+            { note: 659.25, duration: 0.6 }, // E5
+            { note: 523.25, duration: 0.6 }, // C5
+        ];
+        
+        return melody;
+    }
+    
+    async playBackgroundMusic() {
+        if (!this.audioContext || !this.isEnabled || !this.bgMusicEnabled || this.bgMusicPlaying) return;
+        
+        await this.resumeAudioContext();
+        this.bgMusicPlaying = true;
+        
+        // 배경음악용 게인 노드 생성 (볼륨 낮춤)
+        this.bgMusicGainNode = this.audioContext.createGain();
+        this.bgMusicGainNode.connect(this.audioContext.destination);
+        this.bgMusicGainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+        
+        const melody = this.createBackgroundMusic();
+        let noteIndex = 0;
+        
+        const playNote = () => {
+            if (!this.bgMusicPlaying || !this.isEnabled || !this.bgMusicEnabled) return;
+            
+            const note = melody[noteIndex];
+            const oscillator = this.audioContext.createOscillator();
+            const noteGain = this.audioContext.createGain();
+            
+            oscillator.connect(noteGain);
+            noteGain.connect(this.bgMusicGainNode);
+            
+            oscillator.frequency.setValueAtTime(note.note, this.audioContext.currentTime);
+            oscillator.type = 'triangle'; // 부드러운 소리
+            
+            noteGain.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+            noteGain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + note.duration);
+            
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + note.duration);
+            
+            noteIndex = (noteIndex + 1) % melody.length;
+            
+            // 다음 노트 스케줄
+            this.bgMusicInterval = setTimeout(playNote, note.duration * 1000);
+        };
+        
+        playNote();
+    }
+    
+    stopBackgroundMusic() {
+        this.bgMusicPlaying = false;
+        if (this.bgMusicInterval) {
+            clearTimeout(this.bgMusicInterval);
+            this.bgMusicInterval = null;
+        }
+        if (this.bgMusicGainNode) {
+            this.bgMusicGainNode.disconnect();
+            this.bgMusicGainNode = null;
+        }
+    }
+    
+    toggleBackgroundMusic() {
+        this.bgMusicEnabled = !this.bgMusicEnabled;
+        if (this.bgMusicEnabled && this.isEnabled) {
+            this.playBackgroundMusic();
+        } else {
+            this.stopBackgroundMusic();
+        }
+        return this.bgMusicEnabled;
     }
 }
 
@@ -529,11 +637,16 @@ class ColorGame {
         this.statusText = document.getElementById('statusText');
         
         this.soundToggleBtn = document.getElementById('soundToggleBtn');
+        this.introSoundToggleBtn = document.getElementById('introSoundToggleBtn');
     }
     
     setupEventListeners() {
         this.introStartBtn.addEventListener('click', () => {
             this.soundManager.playButtonClickSound();
+            // 첫 번째 사용자 상호작용에서 배경음악 시작
+            if (this.soundManager.isEnabled && !this.soundManager.bgMusicPlaying) {
+                this.soundManager.playBackgroundMusic();
+            }
             this.showNameInput();
         });
         this.startBtn.addEventListener('click', () => {
@@ -586,6 +699,10 @@ class ColorGame {
         });
         
         this.soundToggleBtn.addEventListener('click', () => {
+            this.toggleSound();
+        });
+        
+        this.introSoundToggleBtn.addEventListener('click', () => {
             this.toggleSound();
         });
         
@@ -1019,35 +1136,38 @@ class ColorGame {
     
     toggleSound() {
         const isEnabled = this.soundManager.toggle();
+        this.updateSoundButtons(isEnabled);
+        
         if (isEnabled) {
-            this.soundToggleBtn.textContent = '🔊';
-            this.soundToggleBtn.classList.remove('muted');
-            this.soundToggleBtn.title = '사운드 끄기';
-            // 사운드 활성화 시 확인음
+            // 사운드 활성화 시 확인음과 배경음악 시작
             this.soundManager.playButtonClickSound();
-        } else {
-            this.soundToggleBtn.textContent = '🔇';
-            this.soundToggleBtn.classList.add('muted');
-            this.soundToggleBtn.title = '사운드 켜기';
+            this.soundManager.playBackgroundMusic();
         }
         
         // 로컬 스토리지에 설정 저장
         localStorage.setItem('hueHuntSoundEnabled', isEnabled.toString());
     }
     
+    updateSoundButtons(isEnabled) {
+        const icon = isEnabled ? '🔊' : '🔇';
+        const title = isEnabled ? '사운드 끄기' : '사운드 켜기';
+        const className = isEnabled ? 'remove' : 'add';
+        
+        [this.soundToggleBtn, this.introSoundToggleBtn].forEach(btn => {
+            if (btn) {
+                btn.textContent = icon;
+                btn.classList[className]('muted');
+                btn.title = title;
+            }
+        });
+    }
+    
     loadSoundSettings() {
         const soundEnabled = localStorage.getItem('hueHuntSoundEnabled');
-        if (soundEnabled === 'false') {
-            this.soundManager.isEnabled = false;
-            this.soundToggleBtn.textContent = '🔇';
-            this.soundToggleBtn.classList.add('muted');
-            this.soundToggleBtn.title = '사운드 켜기';
-        } else {
-            this.soundManager.isEnabled = true;
-            this.soundToggleBtn.textContent = '🔊';
-            this.soundToggleBtn.classList.remove('muted');
-            this.soundToggleBtn.title = '사운드 끄기';
-        }
+        const isEnabled = soundEnabled !== 'false';
+        
+        this.soundManager.isEnabled = isEnabled;
+        this.updateSoundButtons(isEnabled);
     }
     
     async updateConnectionStatus() {
